@@ -1,0 +1,70 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Setup Parameters
+Ngrid = 201
+Nsteps = 800
+r_min = 0.1 # Avoid dividing by zero
+r_max = 1.1
+r = np.linspace(r_min, r_max, Ngrid)
+dr = r[1] - r[0]
+
+dt = 0.002  # Time step
+nu = 0.01  # Constant kinematic viscosity
+
+# These are the coefficients that I found in the written homework
+D = 3 * nu
+u = -(9 * nu) / (2 * r)
+
+# Implicit Method
+beta = D * dt / (dr ** 2)
+# Build the Tridiagonal Matrix A
+A = np.eye(Ngrid) * (1 + 2 * beta) + (np.eye(Ngrid, k=1) * -beta) + (np.eye(Ngrid, k=-1) * -beta)
+
+# Setup Advection
+alpha = u * dt / (2 * dr)
+
+# Initial Condition
+# The initial mass distribution is a Dirac delta function meaning 100% of the gas
+# starts at a single point, I represent this as a very narrow Gaussian distribution
+midpoint_r = (r_max + r_min) / 2
+# I chose a standard deviation of 0.02 to make the distribution narrow
+sigma = np.exp(-((r - midpoint_r) ** 2) / (2 * 0.02 ** 2))
+
+# Visual Setup
+plt.ion()
+fig, ax = plt.subplots()
+ax.plot(r, sigma, 'k-') # Initial State
+line_obj, = ax.plot(r, sigma, 'r-', linewidth=2) # Moving State
+
+ax.set_xlim(r_min, r_max)
+ax.set_ylim(0, 1.1)
+ax.set_xlabel("Radius")
+ax.set_ylabel("Surface Density")
+ax.set_title("Viscous Accretion Disk Evolution")
+fig.canvas.draw()
+
+# Main Loop
+for ct in range(Nsteps):
+
+    # Implicit Method for Diffusion
+    sigma = np.linalg.solve(A, sigma)
+
+    # Lax-Friedrichs for advection
+    sigma_new = np.copy(sigma)
+    # Apply LF formula
+    sigma_new[1:Ngrid - 1] = 0.5 * (sigma[2:Ngrid] + sigma[0:Ngrid - 2]) - alpha[1:Ngrid - 1] * (sigma[2:Ngrid] - sigma[0:Ngrid - 2])
+
+    # Set edges to 0 because the gas flows off the grid on both ends
+    sigma_new[0] = 0
+    sigma_new[Ngrid - 1] = 0
+
+    sigma = np.copy(sigma_new)
+
+    # Update Plot
+    line_obj.set_ydata(sigma)
+    fig.canvas.draw()
+    plt.pause(0.001)
+
+plt.ioff()
+plt.show()
