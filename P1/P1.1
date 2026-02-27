@@ -1,0 +1,32 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.special import iv
+
+# Creates a function to calculate sigma that can later be placed in a for loop for different x and tau values
+def calc_sigma(x, tau):
+    I = iv(0.25, 2 * x / tau)
+    result = (1.0 / (tau * x**0.25)) * np.exp(-(1 + x**2) / tau) * I
+    return result
+
+# Define range for dimensionless radius
+x = np.linspace(0.001, 3.5, 1000)
+
+# Select tau values to plot
+tau_values = [0.01, 0.05, 0.2, 0.5, 1.0, 2.0]
+
+plt.figure()
+
+# plots different values of tau and x
+for tau in tau_values:
+    sigma = calc_sigma(x, tau)
+    plt.plot(x, sigma, label=rf'$\tau = {tau}$')
+
+# create axis labels and title for graph
+plt.xlabel(r'Dimensionless Radius')
+plt.ylabel(r'Dimensionless Surface Density')
+plt.title('Time Evolution of an Accretion Disk')
+plt.legend(title="Dimensionless Time")
+plt.xlim(0, 3.5)
+plt.ylim(0, 3)
+
+plt.show()
